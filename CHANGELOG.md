@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **HTTP mode for clients that only take a URL (Perplexity):** `protonmail-mcp --http` serves Streamable HTTP on `http://127.0.0.1:8765/mcp`. Every request needs the API key in `PROTONMAIL_HTTP_TOKEN` (at least 32 characters, as `Authorization: Bearer` or `X-API-Key`); without it the server does not start. New settings `PROTONMAIL_HTTP_TOKEN`, `PROTONMAIL_HTTP_HOST`, `PROTONMAIL_HTTP_PORT` and `PROTONMAIL_HTTP_ALLOWED_HOSTS`. The README describes running it behind Cloudflare Tunnel and Cloudflare Access. Without `--http` nothing changes: stdio is still the default, and unknown command-line arguments are still ignored.
+
 ## [0.4.0] - 2026-10-15
 
 The server now runs on version 2 of the MCP Python SDK. Tools, parameters, resources, prompts and error messages are unchanged; the README has new installation and upgrade instructions.

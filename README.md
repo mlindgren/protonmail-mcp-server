@@ -131,6 +131,28 @@ To try the server interactively, use the MCP Inspector and open the URL it print
 npx @modelcontextprotocol/inspector uv --directory /path/to/protonmail-mcp-server run protonmail-mcp
 ```
 
+### Option 3: clients that only take a URL (Perplexity)
+
+Some clients cannot start a local program and only connect to an MCP server by URL; the Perplexity app is one. For them the server has an HTTP mode (Streamable HTTP):
+
+```bash
+PROTONMAIL_USERNAME=user@proton.me \
+PROTONMAIL_PASSWORD=bridge-generated-password \
+PROTONMAIL_HTTP_TOKEN="$(openssl rand -hex 32)" \
+PROTONMAIL_HTTP_ALLOWED_HOSTS=protonmail-mcp.example.com \
+protonmail-mcp --http
+```
+
+It listens on `http://127.0.0.1:8765/mcp` and refuses every request without the API key, sent as `Authorization: Bearer <key>` or `X-API-Key: <key>`. It does not start without a key of at least 32 characters. `Host` headers other than localhost and the names in `PROTONMAIL_HTTP_ALLOWED_HOSTS` are refused.
+
+Perplexity calls the server from its cloud, so your mailbox becomes reachable from the internet. Put it behind [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/) and [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/access-controls/service-credentials/service-tokens/), never a plain port forward:
+
+1. Run `cloudflared` on the same computer as Bridge with an ingress rule from your hostname to `http://127.0.0.1:8765`.
+2. In Cloudflare Zero Trust, create a service token and a self-hosted Access application for the hostname whose policy has the action **Service Auth** and includes that token.
+3. In Perplexity, add a custom connector: MCP server URL `https://<hostname>/mcp`, transport Streamable HTTP, authentication **API Key** with `PROTONMAIL_HTTP_TOKEN`, and network access **Cloudflare Access** with the service token's client ID and secret.
+
+Anything the model in that client does reaches your real mailbox, and everything it reads is sent to that client's cloud. Consider `PROTONMAIL_SEND_MODE=draft_only` or `PROTONMAIL_READ_ONLY=true` for the HTTP server; it is a separate process with its own settings, so Claude can keep full access.
+
 ### Troubleshooting
 
 - **The server does not start, or `/mcp` shows it as failed**: run the command from the client configuration in a terminal with the same `PROTONMAIL_*` variables. The error is printed on stderr (for example a missing `PROTONMAIL_USERNAME`).
@@ -283,6 +305,10 @@ All settings use the `PROTONMAIL_` prefix and can be set in `.env` or as environ
 | `PROTONMAIL_AUDIT_LOG` | — | File (absolute path or `~`) that also receives the audit log, one JSON line per send and per write operation |
 | `PROTONMAIL_WATCH_ENABLED` | `true` | Watch folders for new mail with IMAP IDLE |
 | `PROTONMAIL_WATCH_MAILBOXES` | `INBOX` | Comma-separated folders to watch, at most 5 (each is its own Bridge connection) |
+| `PROTONMAIL_HTTP_TOKEN` | — | HTTP mode only (`--http`): the API key every request must carry, as `Authorization: Bearer` or `X-API-Key`. Required there, at least 32 characters |
+| `PROTONMAIL_HTTP_HOST` | `127.0.0.1` | HTTP mode only: address to listen on |
+| `PROTONMAIL_HTTP_PORT` | `8765` | HTTP mode only: port to listen on |
+| `PROTONMAIL_HTTP_ALLOWED_HOSTS` | — | HTTP mode only: comma-separated public host names (no scheme or port) accepted in the `Host` header besides localhost; others are refused |
 
 ## Security model
 
@@ -307,7 +333,9 @@ All settings use the `PROTONMAIL_` prefix and can be set in `.env` or as environ
 
 **Send policy and audit log.** `PROTONMAIL_READ_ONLY`, `PROTONMAIL_SEND_MODE`, `PROTONMAIL_ALLOWED_RECIPIENTS`, `PROTONMAIL_MAX_RECIPIENTS` and `PROTONMAIL_MAX_SENDS_PER_HOUR` are enforced centrally in three places: the MCP server refuses a tool by name before it runs, every IMAP write is wrapped in a policy check, and every send goes through a single SMTP delivery path that checks the policy before contacting Bridge. A refusal is an error that reaches the client; nothing is sent. Every send and every write operation (including refused ones) produces an audit line with time, tool, action, mailbox, UIDs, recipients, Message-ID and result — never subject, body, attachments or password. On stderr the recipients are replaced by a count and addresses in error texts are masked; the full line goes to `PROTONMAIL_AUDIT_LOG` if set (created with mode 0600, never written through a symlink). If Bridge accepts only some recipients, the error says who got the email and who did not, so the model does not resend to everyone.
 
-**Secrets.** The Bridge password is masked in all errors and logs, and configuration errors never echo input values.
+**HTTP mode.** Off unless started with `--http`. Every request needs the API key (compared in constant time); a refused request gets 401 without reaching the MCP server, and the log names the headers it had, never their values. The server listens on localhost by default and checks the `Host` header against localhost and `PROTONMAIL_HTTP_ALLOWED_HOSTS` (DNS rebinding protection). Reaching it from the internet is meant to go through Cloudflare Tunnel and Cloudflare Access; the API key still protects the mailbox if the Access rule is missing.
+
+**Secrets.** The Bridge password is masked in all errors and logs, the HTTP API key is never logged, and configuration errors never echo input values.
 
 ## Proton Bridge semantics in brief
 

@@ -1,3 +1,4 @@
+import argparse
 import logging
 import sys
 from contextlib import asynccontextmanager
@@ -166,9 +167,34 @@ def register_tools() -> None:
     prompts.register(mcp)
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    """protonmail-mcp: stdio (standard), eller HTTP med --http (http_server.py)."""
+    parser = argparse.ArgumentParser(prog="protonmail-mcp", description="MCP-server för Proton Mail via Bridge.")
+    parser.add_argument(
+        "--http",
+        action="store_true",
+        help="Streamable HTTP på PROTONMAIL_HTTP_HOST:PROTONMAIL_HTTP_PORT/mcp i stället för stdio; "
+        "kräver PROTONMAIL_HTTP_TOKEN.",
+    )
+    # Okända argument ignoreras som före --http, så att befintliga klientkonfigurationer fungerar
+    args, ignored = parser.parse_known_args(argv)
+    if ignored:
+        logger.warning("Ignorerar okända argument: %s", " ".join(ignored))
     register_tools()
-    mcp.run(transport="stdio")
+    if not args.http:
+        mcp.run(transport="stdio")
+        return
+
+    from . import http_server
+    from .config import get_settings
+
+    try:
+        settings = get_settings()
+        app = http_server.build_app(mcp, settings)
+    except ValueError as exc:
+        logger.error("HTTP-läget startade inte: %s", exc)
+        raise SystemExit(2) from None
+    http_server.serve(app, settings)
 
 
 if __name__ == "__main__":

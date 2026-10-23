@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Literal
 
 import idna
-from pydantic import Field, field_validator
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # <repo>/src/protonmail_mcp/config.py → <repo>/.env. Läses även när servern
@@ -177,6 +177,24 @@ class Settings(BaseSettings):
     # PROTONMAIL_WATCH_MAILBOXES: kommaseparerade mappar att bevaka, högst
     # MAX_WATCH_MAILBOXES (5). Standard: INBOX.
     watch_mailboxes: str = "INBOX"
+
+    # --- HTTP-läget (protonmail-mcp --http, http_server.py) ---
+    # Bara för klienter som inte kan starta ett lokalt program (Perplexity),
+    # bakom Cloudflare Tunnel och Cloudflare Access. Utan --http används
+    # inget av detta; stdio är standard.
+    # PROTONMAIL_HTTP_TOKEN: API-nyckeln som varje anrop måste ha, som
+    # "Authorization: Bearer <nyckel>" eller "X-API-Key: <nyckel>". Krävs i
+    # HTTP-läget, minst 32 tecken; utan den startar servern inte.
+    http_token: SecretStr | None = None
+    # PROTONMAIL_HTTP_HOST: adressen servern lyssnar på. Standard: 127.0.0.1
+    # (bara den här datorn; Cloudflare Tunnel ansluter lokalt).
+    http_host: str = "127.0.0.1"
+    # PROTONMAIL_HTTP_PORT: porten. Standard: 8765.
+    http_port: int = Field(default=8765, ge=1, le=65535)
+    # PROTONMAIL_HTTP_ALLOWED_HOSTS: kommaseparerade publika värdnamn
+    # (protonmail-mcp.exempel.se) som Host-rubriken får ha utöver localhost.
+    # Andra värdnamn nekas (skydd mot DNS rebinding). Standard: inga.
+    http_allowed_hosts: str = ""
 
     model_config = SettingsConfigDict(
         env_prefix="PROTONMAIL_",

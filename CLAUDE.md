@@ -1,6 +1,6 @@
 # protonmail-mcp
 
-MCP-server (MCP Python SDK 2.x, `MCPServer`, stdio) som ger en LLM tillgång till Proton Mail via ProtonMail Bridge på localhost: IMAP för
+MCP-server (MCP Python SDK 2.x, `MCPServer`, stdio; HTTP med `--http`) som ger en LLM tillgång till Proton Mail via ProtonMail Bridge på localhost: IMAP för
 läsning och ändringar, SMTP för skick. 29 verktyg, tre resurser (med prenumerationer), fyra promptar och bevakning
 av nya mejl med IMAP IDLE. README.md (engelska, publik) beskriver verktygen, inställningarna och säkerhetsmodellen
 för användare; den här filen är för den som ändrar koden.
@@ -11,6 +11,7 @@ för användare; den här filen är för den som ändrar koden.
 uv sync
 cp .env.example .env            # PROTONMAIL_USERNAME + Bridge-lösenordet
 uv run protonmail-mcp           # stdio-transport
+uv run protonmail-mcp --http    # HTTP på 127.0.0.1:8765/mcp, kräver PROTONMAIL_HTTP_TOKEN (Perplexity)
 npx @modelcontextprotocol/inspector uv run protonmail-mcp   # testa interaktivt
 ```
 
@@ -21,7 +22,8 @@ Konfiguration för Claude Desktop och Claude Code (`uv --directory /path/to/… 
 ## Arkitektur och modulkarta
 
 `server.main()` anropar `register_tools()`, som importerar verktygsmodulerna (importen registrerar verktygen) och
-registrerar resurser, prenumerationer och promptar, och kör sedan stdio. `lifespan` läser inställningarna, skapar
+registrerar resurser, prenumerationer och promptar, och kör sedan stdio — eller, med `--http`, Streamable HTTP via
+`http_server.py` (en lifespan och en `IMAPClient` för alla HTTP-sessioner). `lifespan` läser inställningarna, skapar
 bilagekatalogen, en delad `IMAPClient` (ansluter lat, vid första anropet), en `SMTPClient` (ansluter per skick) och
 startar `MailWatcher` (egna IDLE-anslutningar). Loggning går bara till stderr — stdout är MCP-protokollet.
 
@@ -30,6 +32,7 @@ startar `MailWatcher` (egna IDLE-anslutningar). Loggning går bara till stderr �
 | `__init__.py` | `__version__` ur paketets metadata; versionens enda källa är `version` i pyproject.toml (servern anger den i serverInfo) |
 | `_sdk.py` | Det enda stället som importerar MCP-SDK:ns serverdelar (`MCPServer`, `Context`, `ToolError`, `Resource`, `ResourceTemplate`, `ToolAnnotations`); övriga moduler importerar härifrån |
 | `__main__.py` | `python -m protonmail_mcp` startar `server.main()` |
+| `http_server.py` | HTTP-läget (`protonmail-mcp --http`): Streamable HTTP på `/mcp` bakom API-nyckeln (`ApiKeyProtected`), Host-kontroll mot `PROTONMAIL_HTTP_ALLOWED_HOSTS`, start med uvicorn |
 | `server.py` | Serverinstansen `mcp` (`_GuardedMCPServer` vägrar verktyg efter policy innan de körs), `INSTRUCTIONS` till modellen, `lifespan`, `register_tools()`, `main()` och lyssnaren som gör nya mejl till resursnotiser |
 | `config.py` | `Settings` (pydantic-settings, prefix `PROTONMAIL_`), tolkning av `ALLOWED_RECIPIENTS` (IDNA2008) och `WATCH_MAILBOXES` |
 | `policy.py` | Skrivskydd, skickläge, mottagarlista, mottagar- och timgräns; `write_operation`-dekoratorn och verktygslistorna `WRITE_TOOLS`/`DRAFT_TOOLS`/`SEND_TOOLS` |

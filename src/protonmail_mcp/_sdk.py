@@ -7,6 +7,7 @@ Resten av paketet importerar härifrån, så att ett byte av SDK-version bara
 from mcp.server.mcpserver import Context, MCPServer
 from mcp.server.mcpserver.exceptions import ResourceError, ToolError
 from mcp.server.mcpserver.resources import DEFAULT_RESOURCE_SECURITY, Resource, ResourceTemplate
+from mcp.server.transport_security import TransportSecuritySettings
 from mcp.shared.exceptions import MCPError
 from mcp.shared.uri_template import UriTemplate
 from mcp.types import INVALID_PARAMS, EmptyResult, SubscribeRequestParams, ToolAnnotations, UnsubscribeRequestParams
@@ -24,6 +25,7 @@ __all__ = [
     "SubscribeRequestParams",
     "ToolAnnotations",
     "ToolError",
+    "TransportSecuritySettings",
     "UnsubscribeRequestParams",
     "UriTemplate",
 ]
