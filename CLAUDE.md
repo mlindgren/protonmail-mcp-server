@@ -33,9 +33,9 @@ startar `MailWatcher` (egna IDLE-anslutningar). Loggning går bara till stderr �
 | `_sdk.py` | Det enda stället som importerar MCP-SDK:ns serverdelar (`MCPServer`, `Context`, `ToolError`, `Resource`, `ResourceTemplate`, `ToolAnnotations`); övriga moduler importerar härifrån |
 | `__main__.py` | `python -m protonmail_mcp` startar `server.main()` |
 | `http_server.py` | HTTP-läget (`protonmail-mcp --http`): Streamable HTTP på `/mcp` bakom API-nyckeln (`ApiKeyProtected`), Host-kontroll mot `PROTONMAIL_HTTP_ALLOWED_HOSTS`, start med uvicorn |
-| `server.py` | Serverinstansen `mcp` (`_GuardedMCPServer` vägrar verktyg efter policy innan de körs), `INSTRUCTIONS` till modellen, `lifespan`, `register_tools()`, `main()` och lyssnaren som gör nya mejl till resursnotiser |
+| `server.py` | Serverinstansen `mcp` (`_GuardedMCPServer` vägrar verktyg efter policy innan de körs och utelämnar `policy.hidden_tools` ur tools/list), `INSTRUCTIONS` till modellen, `lifespan`, `register_tools()`, `main()` och lyssnaren som gör nya mejl till resursnotiser |
 | `config.py` | `Settings` (pydantic-settings, prefix `PROTONMAIL_`), tolkning av `ALLOWED_RECIPIENTS` (IDNA2008) och `WATCH_MAILBOXES` |
-| `policy.py` | Skrivskydd, destruktivspärr (`ALLOW_DESTRUCTIVE`), skickläge, mottagarlista, mottagar- och timgräns; `write_operation`-dekoratorn och verktygslistorna `WRITE_TOOLS`/`DESTRUCTIVE_TOOLS`/`DRAFT_TOOLS`/`SEND_TOOLS` |
+| `policy.py` | Skrivskydd, destruktivspärr (`ALLOW_DESTRUCTIVE`), skickläge, mottagarlista, mottagar- och timgräns; `write_operation`-dekoratorn, verktygslistorna `WRITE_TOOLS`/`DESTRUCTIVE_TOOLS`/`DRAFT_TOOLS`/`SEND_TOOLS` och `hidden_tools` (vad tools/list utelämnar) |
 | `audit.py` | Granskningslogg: en JSON-rad per skick och skrivande IMAP-operation, maskerad på stderr, fullständig i `PROTONMAIL_AUDIT_LOG` |
 | `imap_client.py` | `IMAPClient`: den delade anslutningen med lås (`_serialized`), `_BridgeProtocol`, validering och kvotering, läsning, sökning, flaggor, flytt, radering, mappar |
 | `imap_bulk.py` | Massoperationer (1–100 UID:n i en mapp): flaggor, flytt, radering med svar per UID (`ok`/`failed`) |

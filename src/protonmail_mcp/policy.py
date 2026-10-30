@@ -11,7 +11,8 @@ centralt, så att inget verktyg kan glömma dem:
 - SMTPClient kontrollerar skickpolicyn i den gemensamma leveransvägen.
 - MCP-servern (server.py) vägrar dessutom verktyg efter namn innan de körs,
   så att ett verktyg som först läser originalet (t.ex. reply_to_email) inte
-  ens läser när skicket ändå skulle vägras.
+  ens läser när skicket ändå skulle vägras, och utelämnar verktygen i
+  ``hidden_tools`` ur tools/list, så att modellen aldrig ser dem.
 
 Alla vägringar är ValueError med en text som når klienten oförändrad.
 """
@@ -136,6 +137,17 @@ def require_draft(settings: Any, action: str) -> None:
             f"Servern får varken skicka e-post eller skapa utkast "
             f"(PROTONMAIL_SEND_MODE=disabled), så {action} vägras. Inget har sparats."
         )
+
+
+def hidden_tools(settings: Any) -> frozenset[str]:
+    """Verktygen som inte visas för modellen (tools/list) med de här inställningarna.
+
+    De vägras också efter namn (check_tool) om en klient anropar dem ändå.
+    ``None`` (inställningarna gick inte att läsa) döljer dem — fail-closed.
+    """
+    if settings is None or not _allow_destructive(settings):
+        return DESTRUCTIVE_TOOLS
+    return frozenset()
 
 
 def check_tool(settings: Any, tool: str) -> None:

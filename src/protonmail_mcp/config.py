@@ -142,8 +142,9 @@ class Settings(BaseSettings):
     send_mode: Literal["send", "draft_only", "disabled"] = "send"
     # PROTONMAIL_ALLOW_DESTRUCTIVE=false: verktygen som flyttar, raderar, tar
     # bort eller döper om (move_email, delete_email, delete_folder,
-    # rename_folder, remove_label — de med destructiveHint) vägras, även
-    # permanent radering ur Trash. Läsning, läst/oläst, stjärna, add_label,
+    # rename_folder, remove_label — de med destructiveHint) utelämnas ur
+    # verktygslistan, så att modellen aldrig ser dem, och vägras om de ändå
+    # anropas, även permanent radering ur Trash. Läsning, läst/oläst, stjärna, add_label,
     # create_folder, utkast och skick (enligt PROTONMAIL_SEND_MODE) fungerar.
     # Tillsammans med SEND_MODE=draft_only ger det "läsa och skriva utkast,
     # men inget oåterkalleligt", t.ex. för en agent utan uppsikt. update_draft

@@ -60,3 +60,20 @@ Feature: Destruktivspärr (PROTONMAIL_ALLOW_DESTRUCTIVE)
     Given en IMAP-klient för ett konto utan begränsningar
     When koden direkt i IMAP-klienten flyttar UID "5" i "INBOX" till "Archive"
     Then ska anropet inte ha vägrats av destruktivspärren
+
+  Scenario: Med allow_destructive=false ser modellen inte de destruktiva verktygen
+    Given servern körs med inställningen "allow_destructive" satt till "false"
+    When klienten hämtar verktygslistan
+    Then ska verktygslistan sakna "move_email", "delete_email", "delete_folder", "rename_folder" och "remove_label"
+    And ska verktygslistan innehålla "add_label", "create_folder", "update_draft" och "send_email"
+
+  Scenario: I standardläget ser modellen alla verktyg
+    Given servern körs med inställningen "allow_destructive" satt till "true"
+    When klienten hämtar verktygslistan
+    Then ska verktygslistan innehålla "move_email", "delete_email", "delete_folder", "rename_folder" och "remove_label"
+
+  Scenario: Ett dolt verktyg vägras ändå om klienten anropar det med namn
+    Given servern körs med inställningen "allow_destructive" satt till "false"
+    When LLM:en anropar verktyget "delete_email"
+    Then ska anropet vägras med ett fel som nämner "PROTONMAIL_ALLOW_DESTRUCTIVE=false"
+    And ska Bridge inte ha kontaktats
