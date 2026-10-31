@@ -315,6 +315,8 @@ MESSAGES: dict[str, str] = {
         "The send was refused: {count} recipients, but at most {limit} per email are allowed (PROTONMAIL_MAX_RECIPIENTS). No email was sent.",
     "Skicket vägrades: högst {limit} skick per timme är tillåtet (PROTONMAIL_MAX_SENDS_PER_HOUR), och gränsen är nådd. Nästa skick går {wait} (kl. {at}). Inget mejl skickades.":
         "The send was refused: at most {limit} sends per hour are allowed (PROTONMAIL_MAX_SENDS_PER_HOUR), and the limit is reached. The next send is possible {wait} (at {at}). No email was sent.",
+    "Servern får inte flytta, radera, döpa om eller ta bort något i kontot (PROTONMAIL_ALLOW_DESTRUCTIVE=false), så {action} vägras. Inget har ändrats. Läsning, läst/oläst, stjärna, add_label, create_folder och utkast går fortfarande bra.":
+        "The server may not move, delete, rename or remove anything in the account (PROTONMAIL_ALLOW_DESTRUCTIVE=false), so {action} is refused. Nothing has been changed. Reading, read/unread, stars, add_label, create_folder and drafts still work.",
     "Skapa ett utkast i stället med create_draft, create_reply_draft eller create_forward_draft, så kan användaren granska och skicka det själv i Proton.":
         "Create a draft instead with create_draft, create_reply_draft or create_forward_draft, so the user can review and send it themselves in Proton.",
     # --- prompts.py ---

@@ -203,8 +203,9 @@ def test_tool_catalogue_covers_exactly_the_registered_tools():
         assert not description.startswith(" "), name  # cleandoc
 
 
-def test_param_catalogue_covers_every_schema_description():
+def test_param_catalogue_covers_every_schema_description(monkeypatch):
     register_tools()
+    use_test_settings(monkeypatch)  # tools/list döljer annars de avstängbara verktygen (fail-closed)
     descriptions: set[str] = set()
 
     def walk(schema):
@@ -228,16 +229,18 @@ def test_param_catalogue_covers_every_schema_description():
     assert set(texts_en.RESOURCES) == {"mailboxes", "mailbox", "email"}
 
 
-def test_tool_list_is_swedish_by_default():
+def test_tool_list_is_swedish_by_default(monkeypatch):
     register_tools()
+    use_test_settings(monkeypatch)
     tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
     assert tools["move_email"].title == "Flytta mejl"
     assert tools["move_email"].annotations.title == "Flytta mejl"
     assert mcp.instructions == INSTRUCTIONS
 
 
-def test_tool_list_in_english():
+def test_tool_list_in_english(monkeypatch):
     register_tools()
+    use_test_settings(monkeypatch)
     apply_language("en")
     tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
     assert set(tools) == registered_tools()
@@ -252,8 +255,9 @@ def test_tool_list_in_english():
         assert not SWEDISH_LETTERS.search(_without_intended_swedish(tool.description or "")), tool.name
 
 
-def test_registered_tools_stay_swedish_when_listing_in_english():
+def test_registered_tools_stay_swedish_when_listing_in_english(monkeypatch):
     register_tools()
+    use_test_settings(monkeypatch)
     apply_language("en")
     asyncio.run(mcp.list_tools())
     assert sdk.get_tool(mcp, "move_email").title == "Flytta mejl"
